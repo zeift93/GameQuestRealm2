@@ -60,40 +60,34 @@ const GameMap = () => {
     
     // Update character position if there's movement
     if (moveX !== 0 || moveZ !== 0) {
-      // Calculate movement with rotation
-      const angle = rotation.y;
-      const newX = position.x + (moveX * Math.cos(angle) - moveZ * Math.sin(angle));
-      const newZ = position.z + (moveX * Math.sin(angle) + moveZ * Math.cos(angle));
+      // Fixed camera direction movement - no camera-relative movement
+      const newX = position.x + moveX;
+      const newZ = position.z + moveZ;
       
       // Map boundaries - prevent going out of bounds
       const mapSize = 20;
       const boundedX = Math.max(-mapSize/2, Math.min(mapSize/2, newX));
       const boundedZ = Math.max(-mapSize/2, Math.min(mapSize/2, newZ));
       
-      // Update character position
-      updatePosition(boundedX, boundedZ);
-      
       // Rotation handling (character faces the movement direction)
+      let targetAngle = rotation.y;
       if (moveX !== 0 || moveZ !== 0) {
-        const targetAngle = Math.atan2(moveX, -moveZ);
-        updatePosition(boundedX, boundedZ, targetAngle);
+        targetAngle = Math.atan2(moveX, -moveZ);
       }
+      
+      // Update character position and rotation
+      updatePosition(boundedX, boundedZ, targetAngle);
     }
     
-    // Update camera to follow character
+    // Fixed camera position with slight offset above and behind the character
     if (characterRef.current) {
-      // Smooth camera follow
-      camera.position.x = THREE.MathUtils.lerp(
-        camera.position.x, 
-        position.x + Math.sin(rotation.y) * 5, 
-        0.1
-      );
-      camera.position.z = THREE.MathUtils.lerp(
-        camera.position.z, 
-        position.z + Math.cos(rotation.y) * 5, 
-        0.1
-      );
-      camera.lookAt(position.x, 1, position.z);
+      // Set camera to fixed position relative to world, not character
+      camera.position.x = 0;
+      camera.position.y = 15;  // Higher to see more of the map
+      camera.position.z = 15;
+      
+      // Look at the player
+      camera.lookAt(position.x, 0, position.z);
     }
   });
   

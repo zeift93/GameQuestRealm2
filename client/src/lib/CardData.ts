@@ -8,6 +8,20 @@ export type CreatureType = 'dragon' | 'elemental' | 'beast' | 'undead' | 'golem'
 // Card generation source - where the card comes from
 export type CardSource = 'starter' | 'pack' | 'enemy' | 'reward';
 
+// Card special effects
+export type CardEffect = 
+  | 'none' 
+  | 'stun'           // Skip opponent's next turn
+  | 'heal'           // Restore health
+  | 'shield'         // Reduce next attack damage
+  | 'burn'           // Deal damage over time
+  | 'leech'          // Steal health from opponent
+  | 'boost'          // Increase power
+  | 'weaken'         // Decrease opponent's power
+  | 'double_attack'  // Attack twice in one turn
+  | 'reflect'        // Reflect portion of damage back
+  | 'freeze';        // Opponent can't use special abilities
+
 // Card interface
 export interface Card {
   id: string;
@@ -19,6 +33,10 @@ export interface Card {
   cost: number;
   creatureType: CreatureType;
   color: string;
+  effect?: CardEffect;     // Special effect this card applies
+  effectPower?: number;    // How strong the effect is
+  effectDuration?: number; // How many turns the effect lasts
+  unlockLevel?: number;    // Level required to unlock this card (for progression)
 }
 
 // Card name components for procedural generation

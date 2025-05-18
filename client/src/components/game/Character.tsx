@@ -5,7 +5,7 @@ import { useCharacter } from "@/lib/stores/useCharacter";
 import { useKeyboardControls } from "@react-three/drei";
 import { Controls } from "@/lib/Controls";
 
-// Main player character component
+// Main player character component (chibi style)
 export const Character = () => {
   const characterRef = useRef<THREE.Group>(null);
   const { position, rotation, updatePosition, isMoving, setIsMoving } = useCharacter();
@@ -15,6 +15,8 @@ export const Character = () => {
   const animationRef = useRef({
     bobAmount: 0,
     walkCycle: 0,
+    blinkTimer: 0,
+    isBlinking: false
   });
   
   // Check if character is moving based on keyboard input
@@ -33,11 +35,18 @@ export const Character = () => {
     // Update walk cycle and bob animation
     if (isMoving) {
       animationRef.current.walkCycle += delta * 8;
-      animationRef.current.bobAmount = Math.sin(animationRef.current.walkCycle) * 0.1;
+      animationRef.current.bobAmount = Math.sin(animationRef.current.walkCycle) * 0.15;
     } else {
       // Idle animation - gentle bobbing
       animationRef.current.walkCycle += delta * 2;
-      animationRef.current.bobAmount = Math.sin(animationRef.current.walkCycle) * 0.05;
+      animationRef.current.bobAmount = Math.sin(animationRef.current.walkCycle) * 0.08;
+    }
+    
+    // Blinking animation (random)
+    animationRef.current.blinkTimer -= delta;
+    if (animationRef.current.blinkTimer <= 0) {
+      animationRef.current.isBlinking = !animationRef.current.isBlinking;
+      animationRef.current.blinkTimer = animationRef.current.isBlinking ? 0.15 : Math.random() * 5 + 2;
     }
     
     // Apply animation to character parts
@@ -47,108 +56,162 @@ export const Character = () => {
       
       // Slight rotation while moving
       if (isMoving) {
-        characterRef.current.rotation.z = Math.sin(animationRef.current.walkCycle * 0.5) * 0.05;
+        characterRef.current.rotation.z = Math.sin(animationRef.current.walkCycle * 0.5) * 0.08;
       }
     }
   });
   
   return (
     <group ref={characterRef}>
-      {/* Character body */}
-      <mesh castShadow position={[0, 1, 0]}>
-        <boxGeometry args={[0.6, 1.6, 0.6]} />
+      {/* Character body - Shorter, wider for chibi proportions */}
+      <mesh castShadow position={[0, 0.7, 0]}>
+        <boxGeometry args={[0.8, 1.0, 0.8]} />
+        <meshStandardMaterial color="#6d28d9" metalness={0.1} roughness={0.8} />
+      </mesh>
+      
+      {/* Head - Larger head compared to body for chibi look */}
+      <mesh castShadow position={[0, 1.6, 0]}>
+        <sphereGeometry args={[0.55, 16, 16]} />
+        <meshStandardMaterial color="#f5f3ff" metalness={0.2} roughness={0.6} />
+      </mesh>
+      
+      {/* Eyes - Bigger, more expressive */}
+      {!animationRef.current.isBlinking && (
+        <>
+          <mesh position={[0.2, 1.65, 0.45]}>
+            <sphereGeometry args={[0.12, 16, 16]} />
+            <meshBasicMaterial color="#000000" />
+          </mesh>
+          <mesh position={[-0.2, 1.65, 0.45]}>
+            <sphereGeometry args={[0.12, 16, 16]} />
+            <meshBasicMaterial color="#000000" />
+          </mesh>
+          
+          {/* Eye highlights */}
+          <mesh position={[0.17, 1.68, 0.52]}>
+            <sphereGeometry args={[0.04, 12, 12]} />
+            <meshBasicMaterial color="#ffffff" />
+          </mesh>
+          <mesh position={[-0.17, 1.68, 0.52]}>
+            <sphereGeometry args={[0.04, 12, 12]} />
+            <meshBasicMaterial color="#ffffff" />
+          </mesh>
+        </>
+      )}
+      
+      {/* Blinking eyes */}
+      {animationRef.current.isBlinking && (
+        <>
+          <mesh position={[0.2, 1.65, 0.48]} rotation={[Math.PI/2 - 0.3, 0, 0]}>
+            <planeGeometry args={[0.15, 0.05]} />
+            <meshBasicMaterial color="#000000" side={THREE.DoubleSide} />
+          </mesh>
+          <mesh position={[-0.2, 1.65, 0.48]} rotation={[Math.PI/2 - 0.3, 0, 0]}>
+            <planeGeometry args={[0.15, 0.05]} />
+            <meshBasicMaterial color="#000000" side={THREE.DoubleSide} />
+          </mesh>
+        </>
+      )}
+      
+      {/* Cute mouth */}
+      <mesh position={[0, 1.5, 0.5]} rotation={[0, 0, 0]}>
+        <planeGeometry args={[0.15, 0.06]} />
+        <meshBasicMaterial color="#ff758f" side={THREE.DoubleSide} />
+      </mesh>
+      
+      {/* Rosy cheeks for cute look */}
+      <mesh position={[0.3, 1.55, 0.45]} rotation={[0, -Math.PI/8, 0]}>
+        <circleGeometry args={[0.08, 16]} />
+        <meshBasicMaterial color="#f87171" transparent opacity={0.6} />
+      </mesh>
+      <mesh position={[-0.3, 1.55, 0.45]} rotation={[0, Math.PI/8, 0]}>
+        <circleGeometry args={[0.08, 16]} />
+        <meshBasicMaterial color="#f87171" transparent opacity={0.6} />
+      </mesh>
+      
+      {/* Arms - shorter, chubbier */}
+      <mesh 
+        castShadow 
+        position={[0.5, 0.9, 0]} 
+        rotation={[0, 0, isMoving ? Math.sin(animationRef.current.walkCycle) * 0.5 : 0.2]}
+      >
+        <capsuleGeometry args={[0.15, 0.4, 8, 8]} />
+        <meshStandardMaterial color="#6d28d9" metalness={0.1} roughness={0.8} />
+      </mesh>
+      <mesh 
+        castShadow 
+        position={[-0.5, 0.9, 0]} 
+        rotation={[0, 0, isMoving ? -Math.sin(animationRef.current.walkCycle) * 0.5 : -0.2]}
+      >
+        <capsuleGeometry args={[0.15, 0.4, 8, 8]} />
+        <meshStandardMaterial color="#6d28d9" metalness={0.1} roughness={0.8} />
+      </mesh>
+      
+      {/* Legs - shorter, chubbier */}
+      <mesh 
+        castShadow 
+        position={[0.25, 0.3, 0]} 
+        rotation={[isMoving ? Math.sin(animationRef.current.walkCycle) * 0.6 : 0, 0, 0]}
+      >
+        <capsuleGeometry args={[0.18, 0.35, 8, 8]} />
+        <meshStandardMaterial color="#4c1d95" metalness={0.1} roughness={0.8} />
+      </mesh>
+      <mesh 
+        castShadow 
+        position={[-0.25, 0.3, 0]} 
+        rotation={[isMoving ? -Math.sin(animationRef.current.walkCycle) * 0.6 : 0, 0, 0]}
+      >
+        <capsuleGeometry args={[0.18, 0.35, 8, 8]} />
         <meshStandardMaterial color="#4c1d95" metalness={0.1} roughness={0.8} />
       </mesh>
       
-      {/* Head */}
-      <mesh castShadow position={[0, 2, 0]}>
-        <sphereGeometry args={[0.35, 16, 16]} />
-        <meshStandardMaterial color="#f3e8ff" metalness={0.2} roughness={0.6} />
+      {/* Fantasy wizard hat - larger for chibi proportion */}
+      <mesh castShadow position={[0, 2, 0]} rotation={[0.1, 0, 0.2]}>
+        <coneGeometry args={[0.4, 0.9, 16]} />
+        <meshStandardMaterial color="#7e22ce" metalness={0.1} roughness={0.8} />
       </mesh>
       
-      {/* Eyes */}
-      <mesh position={[0.15, 2.05, 0.3]}>
-        <sphereGeometry args={[0.08, 16, 16]} />
-        <meshBasicMaterial color="#000000" />
-      </mesh>
-      <mesh position={[-0.15, 2.05, 0.3]}>
-        <sphereGeometry args={[0.08, 16, 16]} />
-        <meshBasicMaterial color="#000000" />
+      {/* Hat decoration */}
+      <mesh position={[0, 2.4, 0]}>
+        <sphereGeometry args={[0.12, 16, 16]} />
+        <meshStandardMaterial color="#c4b5fd" emissive="#c4b5fd" emissiveIntensity={0.5} />
       </mesh>
       
-      {/* Arms - they swing with the walk cycle */}
+      {/* Mini cape/cloak for fantasy look */}
+      <mesh castShadow position={[0, 1.0, -0.2]} rotation={[0.2, 0, 0]}>
+        <boxGeometry args={[0.9, 0.8, 0.1]} />
+        <meshStandardMaterial color="#9333ea" metalness={0.1} roughness={0.7} />
+      </mesh>
+      
+      {/* Staff/wand in hand - cuter design */}
       <mesh 
         castShadow 
-        position={[0.4, 1.2, 0]} 
-        rotation={[0, 0, isMoving ? Math.sin(animationRef.current.walkCycle) * 0.4 : 0.2]}
+        position={[0.6, 0.9, 0.3]} 
+        rotation={[0.2, 0, isMoving ? Math.sin(animationRef.current.walkCycle) * 0.5 + 0.2 : 0.2]}
       >
-        <boxGeometry args={[0.2, 0.8, 0.2]} />
-        <meshStandardMaterial color="#4c1d95" metalness={0.1} roughness={0.8} />
-      </mesh>
-      <mesh 
-        castShadow 
-        position={[-0.4, 1.2, 0]} 
-        rotation={[0, 0, isMoving ? -Math.sin(animationRef.current.walkCycle) * 0.4 : -0.2]}
-      >
-        <boxGeometry args={[0.2, 0.8, 0.2]} />
-        <meshStandardMaterial color="#4c1d95" metalness={0.1} roughness={0.8} />
+        <cylinderGeometry args={[0.04, 0.05, 0.8, 8]} />
+        <meshStandardMaterial color="#854d0e" metalness={0.2} roughness={0.6} />
       </mesh>
       
-      {/* Legs - they move with the walk cycle */}
-      <mesh 
-        castShadow 
-        position={[0.2, 0.4, 0]} 
-        rotation={[isMoving ? Math.sin(animationRef.current.walkCycle) * 0.5 : 0, 0, 0]}
+      {/* Star-shaped wand tip */}
+      <group
+        position={[0.6, 1.3, 0.3]}
+        rotation={[0.2, 0, isMoving ? Math.sin(animationRef.current.walkCycle) * 0.5 + 0.2 : 0.2]}
       >
-        <boxGeometry args={[0.25, 0.8, 0.25]} />
-        <meshStandardMaterial color="#312e81" metalness={0.1} roughness={0.8} />
-      </mesh>
-      <mesh 
-        castShadow 
-        position={[-0.2, 0.4, 0]} 
-        rotation={[isMoving ? -Math.sin(animationRef.current.walkCycle) * 0.5 : 0, 0, 0]}
-      >
-        <boxGeometry args={[0.25, 0.8, 0.25]} />
-        <meshStandardMaterial color="#312e81" metalness={0.1} roughness={0.8} />
-      </mesh>
-      
-      {/* Wizard/mage hat */}
-      <mesh castShadow position={[0, 2.4, 0]} rotation={[0.1, 0, 0.2]}>
-        <coneGeometry args={[0.3, 0.7, 16]} />
-        <meshStandardMaterial color="#581c87" metalness={0.1} roughness={0.8} />
-      </mesh>
-      
-      {/* Staff/wand in hand */}
-      <mesh 
-        castShadow 
-        position={[0.5, 1.2, 0.2]} 
-        rotation={[0.2, 0, isMoving ? Math.sin(animationRef.current.walkCycle) * 0.4 + 0.2 : 0.2]}
-      >
-        <cylinderGeometry args={[0.05, 0.05, 1.2, 8]} />
-        <meshStandardMaterial color="#713f12" metalness={0.2} roughness={0.6} />
-      </mesh>
-      
-      {/* Glowing orb on staff */}
-      <mesh 
-        position={[0.5, 1.7, 0.2]} 
-        rotation={[0.2, 0, isMoving ? Math.sin(animationRef.current.walkCycle) * 0.4 + 0.2 : 0.2]}
-      >
-        <sphereGeometry args={[0.1, 16, 16]} />
-        <meshStandardMaterial 
-          color="#a855f7" 
-          emissive="#a855f7" 
-          emissiveIntensity={1}
-          toneMapped={false}
-        />
-      </mesh>
-      
-      {/* Add a small point light to make the staff glow */}
-      <pointLight 
-        position={[0.5, 1.7, 0.2]} 
-        intensity={0.6} 
-        distance={2} 
-        color="#a855f7" 
-      />
+        {/* Create a 5-pointed star shape */}
+        {[...Array(5)].map((_, i) => (
+          <mesh key={i} rotation={[0, 0, (i/5) * Math.PI * 2]}>
+            <boxGeometry args={[0.05, 0.2, 0.05]} />
+            <meshStandardMaterial 
+              color="#f0abfc" 
+              emissive="#f0abfc" 
+              emissiveIntensity={1}
+              toneMapped={false}
+            />
+          </mesh>
+        ))}
+        <pointLight intensity={0.8} distance={3} color="#f0abfc" />
+      </group>
     </group>
   );
 };

@@ -26,8 +26,11 @@ export const CardPack = ({ position, characterPosition }: CardPackProps) => {
   const [showingCard, setShowingCard] = useState(false);
   const [newCard, setNewCard] = useState<any>(null);
   
-  // Check if character is near this card pack
-  useEffect(() => {
+  // Check if character is near this card pack using useFrame instead of useEffect
+  // This prevents the infinite update loop
+  useFrame(() => {
+    if (opened) return; // Skip if already opened
+    
     const distanceToCharacter = Math.sqrt(
       Math.pow(characterPosition[0] - position[0], 2) +
       Math.pow(characterPosition[2] - position[2], 2)
@@ -35,18 +38,17 @@ export const CardPack = ({ position, characterPosition }: CardPackProps) => {
     
     // If character is within interaction range
     if (distanceToCharacter < 2 && !opened) {
-      setHover(true);
-      setInteractableNearby('cardPack');
-    } else {
+      if (!hover) setHover(true);
+      if (useCharacter.getState().interactableNearby !== 'cardPack') {
+        setInteractableNearby('cardPack');
+      }
+    } else if (hover) {
       setHover(false);
-      // Only reset the interactable if this specific pack was the interactable
-      // This prevents clearing another pack's interactable status
-      const isThisPackInteractable = distanceToCharacter < 3;
-      if (view === 'world' && isThisPackInteractable) {
+      if (useCharacter.getState().interactableNearby === 'cardPack') {
         setInteractableNearby(null);
       }
     }
-  }, [characterPosition, position, opened]);
+  });
   
   // Handle pack opening animation and card generation
   useEffect(() => {
