@@ -1,42 +1,52 @@
 import { create } from "zustand";
 import { subscribeWithSelector } from "zustand/middleware";
 
-export type GamePhase = "ready" | "playing" | "ended";
+export type GamePhase = "tutorial" | "ready" | "playing" | "ended";
+export type GameView = "world" | "battle" | "collection" | "pack_opening";
 
 interface GameState {
+  // Game state
   phase: GamePhase;
+  view: GameView;
   
   // Actions
-  start: () => void;
-  restart: () => void;
-  end: () => void;
+  setPhase: (phase: GamePhase) => void;
+  setView: (view: GameView) => void;
+  startTutorial: () => void;
+  startBattle: (level?: number) => void;
 }
 
 export const useGame = create<GameState>()(
   subscribeWithSelector((set) => ({
-    phase: "ready",
+    // Initial state
+    phase: "tutorial",
+    view: "world",
     
-    start: () => {
-      set((state) => {
-        // Only transition from ready to playing
-        if (state.phase === "ready") {
-          return { phase: "playing" };
-        }
-        return {};
-      });
+    // Set game phase
+    setPhase: (phase) => {
+      set({ phase });
     },
     
-    restart: () => {
-      set(() => ({ phase: "ready" }));
+    // Set current view
+    setView: (view) => {
+      set({ view });
     },
     
-    end: () => {
-      set((state) => {
-        // Only transition from playing to ended
-        if (state.phase === "playing") {
-          return { phase: "ended" };
-        }
-        return {};
+    // Start tutorial
+    startTutorial: () => {
+      set({ phase: "tutorial" });
+    },
+    
+    // Start a battle
+    startBattle: (level = 1) => {
+      // Directly set the view to battle
+      set({ view: "battle" });
+      
+      // Import battle store dynamically to avoid circular dependency
+      // This needs to be loaded dynamically since useBattle imports useGame
+      import("./useBattle").then(({ useBattle }) => {
+        const battleStore = useBattle.getState();
+        battleStore.startBattle(level);
       });
     }
   }))

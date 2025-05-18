@@ -39,11 +39,14 @@ export const CardPack = ({ position, characterPosition }: CardPackProps) => {
       setInteractableNearby('cardPack');
     } else {
       setHover(false);
-      if (view === 'world') {
+      // Only reset the interactable if this specific pack was the interactable
+      // This prevents clearing another pack's interactable status
+      const isThisPackInteractable = distanceToCharacter < 3;
+      if (view === 'world' && isThisPackInteractable) {
         setInteractableNearby(null);
       }
     }
-  }, [characterPosition, position, opened, view]);
+  }, [characterPosition, position, opened]);
   
   // Handle pack opening animation and card generation
   useEffect(() => {
