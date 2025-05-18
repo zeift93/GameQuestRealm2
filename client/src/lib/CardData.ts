@@ -187,6 +187,23 @@ const getRandomCreatureType = (): CreatureType => {
   return types[Math.floor(Math.random() * types.length)];
 };
 
+// Helper function to get effect description
+const getEffectDescription = (effect: CardEffect, power: number, duration: number): string => {
+  switch (effect) {
+    case 'stun': return `Stuns opponent for ${duration} turn${duration > 1 ? 's' : ''}.`;
+    case 'heal': return `Heals ${power} health.`;
+    case 'shield': return `Blocks ${power} damage for ${duration} turn${duration > 1 ? 's' : ''}.`;
+    case 'burn': return `Deals ${power} damage over ${duration} turn${duration > 1 ? 's' : ''}.`;
+    case 'leech': return `Steals ${power} health from opponent.`;
+    case 'boost': return `Increases power by ${power} for ${duration} turn${duration > 1 ? 's' : ''}.`;
+    case 'weaken': return `Reduces opponent's power by ${power} for ${duration} turn${duration > 1 ? 's' : ''}.`;
+    case 'double_attack': return `Attacks twice in one turn.`;
+    case 'reflect': return `Reflects ${power}% of damage back to attacker.`;
+    case 'freeze': return `Prevents opponent from using effects for ${duration} turn${duration > 1 ? 's' : ''}.`;
+    default: return '';
+  }
+};
+
 // Generate a complete card
 export const generateCard = (source: CardSource = 'pack', level: number = 1): Card => {
   // Determine card properties based on source and level
@@ -206,16 +223,71 @@ export const generateCard = (source: CardSource = 'pack', level: number = 1): Ca
     type = 'artifact';
   }
   
+  // Add special effects based on rarity and level
+  let effect: CardEffect = 'none';
+  let effectPower = 0;
+  let effectDuration = 0;
+  let unlockLevel = 1;
+  
+  // Higher rarity cards have better chances for special effects
+  const effectChance = {
+    common: 0.1,
+    uncommon: 0.3,
+    rare: 0.6,
+    epic: 0.8,
+    legendary: 1.0
+  };
+  
+  // Only add effects to higher rarity cards and based on chance
+  if (Math.random() < effectChance[rarity]) {
+    // Choose an appropriate effect based on card type
+    if (type === 'creature') {
+      // Creature effects
+      const creatureEffects: CardEffect[] = ['leech', 'double_attack', 'shield', 'boost'];
+      effect = creatureEffects[Math.floor(Math.random() * creatureEffects.length)];
+      unlockLevel = effect === 'double_attack' ? 5 : (effect === 'leech' ? 3 : 1);
+    } else if (type === 'spell') {
+      // Spell effects
+      const spellEffects: CardEffect[] = ['stun', 'burn', 'freeze', 'weaken', 'heal'];
+      effect = spellEffects[Math.floor(Math.random() * spellEffects.length)];
+      unlockLevel = effect === 'freeze' ? 8 : (effect === 'stun' ? 6 : (effect === 'burn' ? 4 : 2));
+    } else {
+      // Artifact effects
+      const artifactEffects: CardEffect[] = ['shield', 'reflect', 'boost'];
+      effect = artifactEffects[Math.floor(Math.random() * artifactEffects.length)];
+      unlockLevel = effect === 'reflect' ? 7 : (effect === 'boost' ? 4 : 1);
+    }
+    
+    // Effect power scales with rarity
+    effectPower = Math.floor(power * 0.3) + Math.floor(Math.random() * 5);
+    
+    // Effect duration 1-3 turns
+    effectDuration = rarity === 'legendary' ? 3 : (rarity === 'epic' || rarity === 'rare' ? 2 : 1);
+  }
+  
+  // Generate name
+  const name = generateCardName();
+  
+  // Generate description with effects
+  let description = generateCardDescription(power, creatureType);
+  if (effect !== 'none') {
+    description += ` ${getEffectDescription(effect, effectPower, effectDuration)}`;
+  }
+  
   return {
     id: generateCardId(),
-    name: generateCardName(),
-    description: generateCardDescription(power, creatureType),
+    name,
+    description,
     type,
     rarity,
     power,
     cost: Math.ceil(power / 3), // Cost scales with power
     creatureType,
-    color
+    color,
+    effect,
+    effectPower,
+    effectDuration,
+    unlockLevel
   };
 };
 
